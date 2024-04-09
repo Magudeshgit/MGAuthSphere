@@ -26,12 +26,15 @@ SECRET_KEY = 'django-insecure--lt*kr4dv2icap)2l346)p14@y&0veoio+b(*^9^n4p9$crv+1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['mgauthsphere.pythonanywhere.com', '127.0.0.1']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
+    'rest_framework.authtoken'
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,8 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'api',
-    'rest_framework',
-    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
