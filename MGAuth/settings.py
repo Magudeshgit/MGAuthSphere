@@ -33,7 +33,7 @@ ALLOWED_HOSTS = ['mgauthsphere.pythonanywhere.com', '127.0.0.1']
 
 INSTALLED_APPS = [
     'rest_framework',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
     
     'django.contrib.admin',
     'django.contrib.auth',
