@@ -3,9 +3,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.hashers import make_password
 
 class CustomManager(BaseUserManager):
-    print("Custom")
     def create_user(self,username=None, email=None,password=None,**extra_fields):
-        print("asdad", email, password)
         if not email:
             raise ValueError("Email field should not be empty")
         user = self.model(email = email, username=username)

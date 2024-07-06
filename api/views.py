@@ -47,6 +47,8 @@ class Public_Accounts(ModelViewSet):
         session = self.sh.create_session(user_id=user.id)
         respond = Account_Serializer(user).data
         respond['session_id'] = session.session_key
+        respond['session_created'] = session.created_on
+        respond['session_expiry'] = session.expire_date
         return Response(respond)
 
     
@@ -62,7 +64,7 @@ class Public_Accounts(ModelViewSet):
                 Username = request.data['username']
             Password = request.data['password']
         except KeyError:
-            return Response("InvalidParameters: Parameters are invalid or missing (Required parameters: username,password,authmode)", status=status.HTTP_400_BAD_REQUEST)
+            return Response("InvalidParameters: Parameters are invalid or missing (Required parameters: username/email,password,authmode)", status=status.HTTP_400_BAD_REQUEST)
         
         if Mode == 'alpha':
             user = self.at.authenticatemail(_email=Email, password=Password)
@@ -73,7 +75,8 @@ class Public_Accounts(ModelViewSet):
             session = self.sh.create_session(user_id=user.id)
             respond = Account_Serializer(user).data
             respond['session_id'] = session.session_key
-            print(respond)
+            respond['session_created'] = session.created_on
+            respond['session_expiry'] = session.expire_date
             return Response(respond)
         else:
             return Response("User does not Exist", status=status.HTTP_401_UNAUTHORIZED)
