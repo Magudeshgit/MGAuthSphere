@@ -10,9 +10,12 @@ from rest_framework.permissions import IsAuthenticated
 from .session_handler import SessionHandler
 from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
+from django.views.decorators.csrf import csrf_exempt
+
 
 @authentication_classes([SessionAuthentication,TokenAuthentication])
 @permission_classes([IsAuthenticated])
+# @csrf_exempt
 class Public_Accounts(ModelViewSet):
     serializer_class = Account_Serializer
     queryset = MGRealm.objects.all()
@@ -23,21 +26,21 @@ class Public_Accounts(ModelViewSet):
     # UPDATE 25-06-24: Determine from which app "/creatuser/" request is received and then handle signed_services accordingly.
     def createuser(self, request):
         try: 
-            Username = request.data['username']
+            Email = request.data['email']
             Password = request.data['password']
             App_key = request.data['app_key']
         except KeyError:
-            return Response("InvalidParameters: Parameters are invalid or missing (Required parameters: username,password, app_password)", status=status.HTTP_400_BAD_REQUEST)
+            return Response("InvalidParameters: Parameters are invalid or missing (Required parameters: email,password, app_password)", status=status.HTTP_400_BAD_REQUEST)
         
-        _optional_fields = ['first_name','last_name','email']
-        optional_fields = {'first_name': '', 'last_name': '', 'email': ''}
+        _optional_fields = ['first_name','last_name']
+        optional_fields = {'first_name': '', 'last_name': ''}
         for field in _optional_fields:
             if request.data.get(field) != None:
                 optional_fields[field] = request.data.get(field)
                 
         try:
             app = MG_Products.objects.get(app_key=App_key)
-            user = MGRealm.objects.create(username=Username, password=Password, created_service=app.productname, **optional_fields)
+            user = MGRealm.objects.create(email=Email, password=Password, created_service=app.productname, **optional_fields)
             user.signed_services.add(app)
             user.save()
         except (IntegrityError, ObjectDoesNotExist) as e:
@@ -49,37 +52,30 @@ class Public_Accounts(ModelViewSet):
         respond['session_id'] = session.session_key
         respond['session_created'] = session.created_on
         respond['session_expiry'] = session.expire_date
+        
         return Response(respond)
 
     
     @action(detail=False, methods=['post'])
     def authenticate(self, request): #To handle login
-        print(request.user)
-        Mode = ''
         try: 
-            Mode = request.data['authmode']
-            if Mode == 'alpha':
-                Email = request.data['email']
-            else:
-                Username = request.data['username']
+            Email = request.data['email']
             Password = request.data['password']
         except KeyError:
-            return Response("InvalidParameters: Parameters are invalid or missing (Required parameters: username/email,password,authmode)", status=status.HTTP_400_BAD_REQUEST)
-        
-        if Mode == 'alpha':
-            user = self.at.authenticatemail(_email=Email, password=Password)
-        else:
-            user = self.at.authenticateusername(_username=Username, password=Password)
+            return Response("InvalidParameters: Parameters are invalid or missing (Required parameters: email,password)", status=status.HTTP_400_BAD_REQUEST)
+
+        user = self.at.authenticatemail(_email=Email, password=Password)
         if user is not None:
             # Session allocation
             session = self.sh.create_session(user_id=user.id)
             respond = Account_Serializer(user).data
+            respond['status'] = 'success'
             respond['session_id'] = session.session_key
-            respond['session_created'] = session.created_on
             respond['session_expiry'] = session.expire_date
             return Response(respond)
         else:
-            return Response("User does not Exist", status=status.HTTP_401_UNAUTHORIZED)
+            respond = {'status': 'failed', 'detail': 'User does not exist'}
+            return Response(respond, status=status.HTTP_401_UNAUTHORIZED)
     
     @action(detail=False, methods=['post'])
     def checklogin(self, request):
@@ -90,6 +86,7 @@ class Public_Accounts(ModelViewSet):
         user = self.sh.check_login(Session_id)
         if user:
             respond = Account_Serializer(user).data
+            respond['status'] = 'success'
             respond['session_id'] = Session_id
             return Response(respond)
         else:
@@ -102,14 +99,6 @@ class Public_Accounts(ModelViewSet):
         except KeyError:
             return Response({"status":"failed","detail": "InvalidParameters: Parameters are invalid or missing (Required parameters: username,password)"}, status=status.HTTP_400_BAD_REQUEST)
         if self.sh.logout(Session_id):
-            return Response({"detail": "Succesfull"})
+            return Response({"status":"success","detail": "logout operation succesfull"})
         else:
-            return Response({"detail": "Unsuccesfull"})
-        
-    @action(detail=False, methods=['post'])  
-    def sample(self, request):
-        a=request.data.get('no')
-        b=request.data.get('sdf')
-        print(a,b)
-        return Response("Hello!")
-
+            return Response({"status":"failed","detail": "unsuccesfull"})

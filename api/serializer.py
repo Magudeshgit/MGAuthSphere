@@ -10,6 +10,6 @@ class Account_Serializer(serializers.ModelSerializer):
 	signed_services = services_Serializer(many=True, read_only=True)	
 	class Meta:
 		model=MGRealm
-		fields=['id','username','email','signed_services']
+		fields=['id','email','signed_services']
 
 

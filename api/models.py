@@ -41,17 +41,20 @@ class MG_Products(models.Model):
         return self.productname
 
 class MGRealm(AbstractUser):
-    
-    email = models.EmailField(unique=True, blank=True)
+    email = models.EmailField(unique=True)
     developer = models.BooleanField(default=False)
     signed_services=models.ManyToManyField(MG_Products, related_name='signedservices')
     user_permissions = models.ManyToManyField(Permission, related_name="mguser_set")
     groups = None
+    username = None
     
     created_service = models.CharField(max_length=50, blank=True)
     api_token = models.CharField(max_length=100, blank=True)    #For Developer Allowance
     
     objects = CustomManager()
+    
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     # def save(self, *args, **kwargs):
     #     if not self.pk:

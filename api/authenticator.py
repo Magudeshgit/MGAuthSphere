@@ -15,21 +15,3 @@ class CustomerManager(ModelBackend):
                 return None
         except ObjectDoesNotExist:
             return None
-    
-    # For authentication with username
-    def authenticateusername(self, _username=None, password=None):
-        print(_username, password)
-        if _username is None or password is None:
-            print("exit1")
-            return
-        try:
-            user = MGRealm.objects.get(username=_username)
-            if user.check_password(password) and self.user_can_authenticate(user):
-                return user
-            else:
-                print("exit2")
-                return None
-        except ObjectDoesNotExist:
-            print("exit3")
-            return None
-        
