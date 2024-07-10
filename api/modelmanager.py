@@ -3,7 +3,8 @@ from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.hashers import make_password
 
 class CustomManager(BaseUserManager):
-    def create_user(self,email=None,password=None,**extra_fields):
+    use_in_migrations = True
+    def create_user(self,email,password,**extra_fields):
         if not email:
             raise ValueError("Email field should not be empty")
         user = self.model(email = email)

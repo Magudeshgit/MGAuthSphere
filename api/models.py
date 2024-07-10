@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from django.utils.crypto import get_random_string
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.sessions.base_session import BaseSessionManager
-from django.contrib.auth.hashers import make_password
+from django.core.validators import validate_email
 from .modelmanager import CustomManager
 import string
 
@@ -41,7 +41,7 @@ class MG_Products(models.Model):
         return self.productname
 
 class MGRealm(AbstractUser):
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, validators=[validate_email])
     developer = models.BooleanField(default=False)
     signed_services=models.ManyToManyField(MG_Products, related_name='signedservices')
     user_permissions = models.ManyToManyField(Permission, related_name="mguser_set")
@@ -55,16 +55,6 @@ class MGRealm(AbstractUser):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-
-    # def save(self, *args, **kwargs):
-    #     if not self.pk:
-    #             if self.developer:
-    #                 if self.api_token == '':
-    #                     api_token = Token.objects.create(user = self)
-    #                     self.api_token = api_token.key
-    #             else:
-    #                 self.api_token = ''
-    #     return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.email

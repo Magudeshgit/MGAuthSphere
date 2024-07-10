@@ -16,6 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 @authentication_classes([SessionAuthentication,TokenAuthentication])
 @permission_classes([IsAuthenticated])
 # @csrf_exempt
+
 class Public_Accounts(ModelViewSet):
     serializer_class = Account_Serializer
     queryset = MGRealm.objects.all()
@@ -40,7 +41,7 @@ class Public_Accounts(ModelViewSet):
                 
         try:
             app = MG_Products.objects.get(app_key=App_key)
-            user = MGRealm.objects.create(email=Email, password=Password, created_service=app.productname, **optional_fields)
+            user = MGRealm.objects.create_user(email=Email, password=Password, created_service=app.productname, **optional_fields)
             user.signed_services.add(app)
             user.save()
         except (IntegrityError, ObjectDoesNotExist) as e:
@@ -49,6 +50,7 @@ class Public_Accounts(ModelViewSet):
         # Session Allocation
         session = self.sh.create_session(user_id=user.id)
         respond = Account_Serializer(user).data
+        respond['status'] = 'success'
         respond['session_id'] = session.session_key
         respond['session_created'] = session.created_on
         respond['session_expiry'] = session.expire_date
@@ -98,6 +100,7 @@ class Public_Accounts(ModelViewSet):
             Session_id = request.data['session_id']
         except KeyError:
             return Response({"status":"failed","detail": "InvalidParameters: Parameters are invalid or missing (Required parameters: username,password)"}, status=status.HTTP_400_BAD_REQUEST)
+        
         if self.sh.logout(Session_id):
             return Response({"status":"success","detail": "logout operation succesfull"})
         else:
