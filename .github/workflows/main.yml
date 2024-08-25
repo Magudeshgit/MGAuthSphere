@@ -15,5 +15,5 @@ jobs:
           api_token: "a77cf6fe7ea22678ce2e0c114fb853b4eeb05924"
           domain_name: "mgauthsphere.pythonanywhere.com"
           console_id:  "33267297"
-          virtual_env: "/home/MGAuthSphere/.virtualenvs"
-          directory: "/home/MGAuthSphere/MGAuthSphere"
+          virtual_env: ".virtualenvs"
+          directory: "MGAuthSphere"
