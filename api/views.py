@@ -84,7 +84,7 @@ class Public_Accounts(ModelViewSet):
         try:
             Session_id = request.data['session_id']
         except KeyError:
-            return Response({"status":"failed","detail":"InvalidParameters: Parameters are invalid or missing (Required parameters: username,password)"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status":"failed","detail":"InvalidParameters: Parameters are invalid or missing (Required parameters: session id)"}, status=status.HTTP_400_BAD_REQUEST)
         user = self.sh.check_login(Session_id)
         if user:
             respond = Account_Serializer(user).data
@@ -105,3 +105,6 @@ class Public_Accounts(ModelViewSet):
             return Response({"status":"success","detail": "logout operation succesfull"})
         else:
             return Response({"status":"failed","detail": "unsuccesfull"})
+    
+    def get_view_name(self):
+        return 'MGAuthSphere - Central Authentication'

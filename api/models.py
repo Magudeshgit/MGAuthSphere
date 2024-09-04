@@ -11,6 +11,7 @@ from django.contrib.sessions.base_session import BaseSessionManager
 from django.core.validators import validate_email
 from .modelmanager import CustomManager
 import string
+import uuid
 
 VALID_KEY_CHARS = string.ascii_lowercase + string.digits
 
@@ -42,6 +43,7 @@ class MG_Products(models.Model):
 
 class MGRealm(AbstractUser):
     email = models.EmailField(unique=True, validators=[validate_email])
+    userid = models.CharField(max_length=50, null=True)
     developer = models.BooleanField(default=False)
     signed_services=models.ManyToManyField(MG_Products, related_name='signedservices')
     user_permissions = models.ManyToManyField(Permission, related_name="mguser_set")
@@ -57,7 +59,12 @@ class MGRealm(AbstractUser):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.email
+        return str(self.userid)
+    
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            self.userid = str(uuid.uuid4()).replace('-','')
+        return super().save(*args, **kwargs)
     
     class Meta:
         verbose_name="User Account"
