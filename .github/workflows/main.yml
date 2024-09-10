@@ -11,7 +11,7 @@ jobs:
         uses: umuttopalak/pythonanywhere-deploy-action@master
         with:
           host: "www.pythonanywhere.com"
-          username: "mgauthsphere"
+          username: "MGAuthSphere"
           api_token: "a77cf6fe7ea22678ce2e0c114fb853b4eeb05924"
           domain_name: "mgauthsphere.pythonanywhere.com"
           console_id:  "33267297"
