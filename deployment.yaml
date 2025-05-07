@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mgauthsphere-api
+# Deployment configuration for itself.
+
+# Pod Config
+spec: 
+  selector:
+    matchLabels:
+      app: mgauthsphere-api #To match pod
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: mgauthsphere-api #pod label
+    spec: 
+      containers:
+      - name: mgauthsphere
+        image: mgauthsphere
+        imagePullPolicy: Never
+        ports: 
+        - containerPort: 7000
+
+
