@@ -19,7 +19,7 @@ VALID_KEY_CHARS = string.ascii_lowercase + string.digits
 
 # Note:
 # Two types of tokens are used for authorization
-# 1.) app_key in MG_Products - For internal authorization between MG apps
+# 1.) app_key in MG_Products - For internal authorization between MG apps within MGAuthSphere
 # 2.) api_token in MGRealm - For Developer access to mgauthsphere itself
 
 class MG_Products(models.Model):
