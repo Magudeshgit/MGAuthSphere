@@ -4,4 +4,4 @@ MGAuthSphere is a central authentication system for all MG products, it provides
 
 Now with MGAuthSphere, there will be one single password for all of your MG Products, which are centrally synced for storage and authentication.
 
-Feel free contribute to this project or open issues.
+Feel free contribute to this project or open issue

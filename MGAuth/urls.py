@@ -24,5 +24,5 @@ router.register(r'api', views.Public_Accounts, basename='MGAuthSphere Accounts')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include(router.urls))
+    path('', include(router.urls)),
 ]

@@ -12,6 +12,8 @@ from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 
+from django.shortcuts import render
+
 
 @authentication_classes([SessionAuthentication,TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -94,6 +96,15 @@ class Public_Accounts(ModelViewSet):
         else:
             return Response({"status": "failed","detail": "User Session does not exist: Authenticate first"}, status=status.HTTP_401_UNAUTHORIZED)
 
+    @action(detail=False, methods=['post'])        
+    def getsymmetrickey(self, request):
+        try:
+            app_key = request.data['app_key']
+            key = MG_Products.objects.get(app_key=app_key).symkey
+        except Exception:
+            return Response({"status":"failed","detail": "InvalidParameters: Parameters are invalid or missing (Required parameters: username,password)"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"success","symkey": key})
+    
     @action(detail=False, methods=['post'])        
     def logout(self, request):
         try:
