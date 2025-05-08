@@ -12,7 +12,12 @@ from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 
+import firebase_admin
+import os
+from firebase_admin.credentials import RefreshToken
 from django.shortcuts import render
+
+firebpp = firebase_admin.initialize_app()
 
 
 @authentication_classes([SessionAuthentication,TokenAuthentication])
@@ -95,7 +100,7 @@ class Public_Accounts(ModelViewSet):
             return Response(respond)
         else:
             return Response({"status": "failed","detail": "User Session does not exist: Authenticate first"}, status=status.HTTP_401_UNAUTHORIZED)
-
+    
     @action(detail=False, methods=['post'])        
     def getsymmetrickey(self, request):
         try:
@@ -116,6 +121,24 @@ class Public_Accounts(ModelViewSet):
             return Response({"status":"success","detail": "logout operation succesfull"})
         else:
             return Response({"status":"failed","detail": "unsuccesfull"})
+        
+        # Primary Update 1: Adding Oauth Provision
+    
+    # @action (detail=False, methods=['post'])
+    # def gauth_validate(detAI)
+    
+    @action(detail=False, methods=['post'])
+    def gauth_create(self, request):
+        try:
+            id__token = request.data['id_token']
+            k = RefreshToken(id__token)
+            print(k)
+            return Response({"status":"success", "detail": k})
+        except KeyError:
+            return Response({"status":"failed","detail": "InvalidParameters: Parameters are invalid or missing (Required parameters: id_token)"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
     
     def get_view_name(self):
         return 'MGAuthSphere - Central Authentication'

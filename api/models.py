@@ -60,6 +60,9 @@ class MGRealm(AbstractUser):
     
     created_service = models.CharField(max_length=50, blank=True)
     api_token = models.CharField(max_length=100, blank=True)    #For Developer Allowance
+    oauth_credentials = models.JSONField(blank=True, null=True)
+    is_oauth = models.BooleanField(default=False)
+    
     
     objects = CustomManager()
     
