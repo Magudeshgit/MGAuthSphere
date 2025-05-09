@@ -43,8 +43,8 @@ class MG_Products(models.Model):
             
     
     class Meta:
-        verbose_name = "MG Product"
-        verbose_name_plural = "MG Products"
+        verbose_name = "MG Service Account"
+        verbose_name_plural = "MG Service Accounts"
 
     def __str__(self):
         return self.productname
@@ -59,9 +59,11 @@ class MGRealm(AbstractUser):
     username = None
     
     created_service = models.CharField(max_length=50, blank=True)
-    api_token = models.CharField(max_length=100, blank=True)    #For Developer Allowance
+    api_token = models.CharField(max_length=100, blank=True, verbose_name="Developer Token")    #For Developer Allowance
     oauth_credentials = models.JSONField(blank=True, null=True)
+    
     is_oauth = models.BooleanField(default=False)
+    is_email_verified = models.BooleanField(default=False)
     
     
     objects = CustomManager()
@@ -70,7 +72,7 @@ class MGRealm(AbstractUser):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return str(self.userid)
+        return self.email
     
     def save(self, *args, **kwargs):
         if self.pk is None:
@@ -93,6 +95,6 @@ class MGRealm_Sessions(models.Model):
         return self.session_key    
     
     class Meta:
-        verbose_name = "Account Session"
-        verbose_name_plural = "Account Sessions"
+        verbose_name = "User Account Session"
+        verbose_name_plural = "User Account Sessions"
         
