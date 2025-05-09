@@ -1,3 +1,4 @@
+import firebase_admin.auth
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action, authentication_classes, permission_classes
@@ -16,8 +17,10 @@ import firebase_admin
 import os
 from firebase_admin.credentials import RefreshToken
 from django.shortcuts import render
+from django.conf import settings
 
-firebpp = firebase_admin.initialize_app()
+cred = firebase_admin.credentials.Certificate(os.path.join(settings.BASE_DIR,'api/firebase.json'))
+firebpp = firebase_admin.initialize_app(cred)
 
 
 @authentication_classes([SessionAuthentication,TokenAuthentication])
@@ -45,25 +48,10 @@ class Public_Accounts(ModelViewSet):
         for field in _optional_fields:
             if request.data.get(field) != None:
                 optional_fields[field] = request.data.get(field)
-                
-        try:
-            app = MG_Products.objects.get(app_key=App_key)
-            user = MGRealm.objects.create_user(email=Email, password=Password, created_service=app.productname, **optional_fields)
-            user.signed_services.add(app)
-            user.save()
-        except (IntegrityError, ObjectDoesNotExist) as e:
-            return Response({"status": "failed", "detail":str(e)})
-
-        # Session Allocation
-        session = self.sh.create_session(user_id=user.id)
-        respond = Account_Serializer(user).data
-        respond['status'] = 'success'
-        respond['session_id'] = session.session_key
-        respond['session_created'] = session.created_on
-        respond['session_expiry'] = session.expire_date
         
-        return Response(respond)
-
+        
+        response = self._create_user(Email, Password, App_key, **optional_fields)    
+        return Response(response)
     
     @action(detail=False, methods=['post'])
     def authenticate(self, request): #To handle login
@@ -128,17 +116,55 @@ class Public_Accounts(ModelViewSet):
     # def gauth_validate(detAI)
     
     @action(detail=False, methods=['post'])
-    def gauth_create(self, request):
+    def gauthcreateuser(self, request):
         try:
             id__token = request.data['id_token']
-            k = RefreshToken(id__token)
-            print(k)
-            return Response({"status":"success", "detail": k})
+            refresh__token = request.data['refresh_token']
+            k = firebase_admin.auth.verify_id_token(id__token)
+            _optional_fields = {"first_name":k['name'].split(" ")[0], 
+                               "last_name" : k['name'].split(" ")[1], 
+                               "oauth_credentials": {
+                                   "refreshToken": refresh__token,
+                                   "uid": k['uid'],
+                                   "sign_in_provider": k['firebase']['sign_in_provider'],
+                                   "photoURL": k['picture']
+                               },
+                               "is_oauth": True,
+                               "is_email_verified": k['email_verified']
+                               }
+            response = self._create_user(k['email'], k['email']+k['name'], request.data['app_key'], **_optional_fields)
+    
+            return Response(response)
+        
+        
         except KeyError:
-            return Response({"status":"failed","detail": "InvalidParameters: Parameters are invalid or missing (Required parameters: id_token)"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status":"failed","detail": "InvalidParameters: Parameters are invalid or missing (Required parameters: id_token, refresh_token)"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"status": "failed", "detail": f"as{e}"})
+    
+    # @action(detail=False, methods=['post'])
+    # def 
+    
+    
+    # Utility Functions
+    def _create_user(self, email, password, appId, **optional_fields):
+        try:
+            app = MG_Products.objects.get(app_key=appId)
+            user = MGRealm.objects.create_user(email=email, password=password, created_service=app.productname, **optional_fields)
+            user.signed_services.add(app)
+            user.save()
+            
+        except Exception as e:
+            return {"status": "failed", "detail": str(e)}
+
+        # Session Allocation
+        session = self.sh.create_session(user_id=user.id)
+        respond = Account_Serializer(user).data
+        respond['session_id'] = session.session_key
+        respond['session_created'] = session.created_on
+        respond['session_expiry'] = session.expire_date
         
-        
-        
+        return respond
     
     def get_view_name(self):
         return 'MGAuthSphere - Central Authentication'
