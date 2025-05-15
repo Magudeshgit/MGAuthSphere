@@ -1,23 +1,26 @@
+import firebase_admin.app_check
 import firebase_admin.auth
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action, authentication_classes, permission_classes
 from rest_framework.viewsets import ModelViewSet
-from .models import MGRealm, MG_Products
-from .authenticator import CustomerManager as cm
-from .serializer import Account_Serializer
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from .session_handler import SessionHandler
+
 from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from django.conf import settings
+
+from .models import MGRealm, MG_Products
+from .authenticator import CustomerManager as cm
+from .serializer import Account_Serializer
+from .session_handler import SessionHandler
+from .requestutility import exchange_token
 
 import firebase_admin
 import os
-from firebase_admin.credentials import RefreshToken
-from django.shortcuts import render
-from django.conf import settings
 
 cred = firebase_admin.credentials.Certificate(os.path.join(settings.BASE_DIR,'api/firebase.json'))
 firebpp = firebase_admin.initialize_app(cred)
@@ -116,13 +119,15 @@ class Public_Accounts(ModelViewSet):
     # def gauth_validate(detAI)
     
     @action(detail=False, methods=['post'])
-    def gauthcreateuser(self, request):
+    def oauthcreateuser(self, request):
+        MGRealm.objects.update()
+        
         try:
             id__token = request.data['id_token']
             refresh__token = request.data['refresh_token']
             k = firebase_admin.auth.verify_id_token(id__token)
-            _optional_fields = {"first_name":k['name'].split(" ")[0], 
-                               "last_name" : k['name'].split(" ")[1], 
+            print(k)
+            _optional_fields = {"first_name": k['name'],  
                                "oauth_credentials": {
                                    "refreshToken": refresh__token,
                                    "uid": k['uid'],
@@ -142,8 +147,27 @@ class Public_Accounts(ModelViewSet):
         except Exception as e:
             return Response({"status": "failed", "detail": f"as{e}"})
     
-    # @action(detail=False, methods=['post'])
-    # def 
+    @action(detail=False, methods=['post'])
+    def oauth_checklogin(self, request):
+        try: 
+            session_id = request.data['session_id']
+            user = self.sh.get_corresponding_user(session_id)
+            if user  == False:
+                return Response({"status": "failed", "detail": "Invalid session_id"})
+            else:
+                # k = firebase_admin.credentials.RefreshToken(user.oauth_credentials['refreshToken'])
+                k=exchange_token(user.oauth_credentials['refreshToken'])
+                _user_profile = k['user_profile']
+                self.revise_oauth_user_profile(user,_user_profile)
+                return Response({"status": "success", "detail": k})
+        except KeyboardInterrupt as e:
+            print(e)
+            return Response({"status": "failed", "detail": f"Invalid Token {e}"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+
+                
+            
+            
     
     
     # Utility Functions
@@ -165,6 +189,19 @@ class Public_Accounts(ModelViewSet):
         respond['session_expiry'] = session.expire_date
         
         return respond
+    
+    def revise_oauth_user_profile(self, user, updated_details):
+        
+        user.first_name = updated_details['name']
+        user.oauth_credentials['photoURL'] = updated_details['picture']
+        user.save()
+        
+        return True
+    
+    # Done with implementing redundanct between GL Servers and MGAS, but need to reform architure in such a way MGAS stays APEX for authenticated users, Any action relating to user access control shall only resort to MGAS as endpoint.  - PENDING UPDATE
+
+        
+        
     
     def get_view_name(self):
         return 'MGAuthSphere - Central Authentication'

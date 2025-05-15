@@ -15,17 +15,25 @@ class SessionHandler:
     # Utilities
         
     def new_session_key(self):
+        """
+        Creates A New Session Key, An Utility Function
+        """
         return get_random_string(32, VALID_KEY_CHARS)
     
     def set_expiry(self, date=None):
-        print('sd',date)
+        """
+        Updates the expiration period of a session key
+        """
         if date==None:
             return timezone.localdate() + timedelta(days=14) 
         else:
             return str(datetime(date) + timedelta(days=14) )
 
     # Validators and Handlers
-    def create_session(self, user_id=None): #Methods: Authenticate
+    def create_session(self, user_id=None): 
+        """
+            Suite Function, Creates a Session associated with user and returns the created object
+        """
         userobj = self.usermodel.objects.get(id=user_id)
         # Avoid not unique constraint error
         if self.sessmodel.objects.filter(user = userobj).exists():
@@ -37,18 +45,33 @@ class SessionHandler:
             user = userobj
         )
 
-    def check_login(self, Session_key): #Methods: To login
+    def check_login(self, Session_key):
+        """
+        Checks for the expiration of the provided Session_key
+        """
         session = self.sessmodel.objects.filter(session_key=Session_key)
         if session.exists():
             if timezone.localdate() < session[0].expire_date:
                 return session[0].user 
             else:
                 session[0].delete()
-                return False
-        else:
+        return False
+    
+    def get_corresponding_user(self, Session_key):
+        """
+        Returns the user associated with specified Session, False if none
+        """
+        try:
+            session = self.sessmodel.objects.get(session_key=Session_key)
+            return session.user
+        except ObjectDoesNotExist:
             return False
+        
 
     def logout(self, Session_key):
+        """
+        Clears the session of the provided
+        """
         session = self.sessmodel.objects.filter(session_key=Session_key)
         if session.exists():
             session[0].delete()
