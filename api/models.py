@@ -90,9 +90,10 @@ class MGRealm_Sessions(models.Model):
     created_on = models.DateTimeField(default=datetime.now())
     expire_date = models.DateField(db_index=True)
     user = models.ForeignKey(MGRealm, on_delete=models.CASCADE)
+    last_session_update = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.session_key    
+        return self.user.email    
     
     class Meta:
         verbose_name = "User Account Session"

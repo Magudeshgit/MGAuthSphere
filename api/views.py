@@ -83,14 +83,14 @@ class Public_Accounts(ModelViewSet):
             Session_id = request.data['session_id']
         except KeyError:
             return Response({"status":"failed","detail":"InvalidParameters: Parameters are invalid or missing (Required parameters: session id)"}, status=status.HTTP_400_BAD_REQUEST)
-        user = self.sh.check_login(Session_id)
+        statusmsg, user = self.sh.check_login(Session_id)
         if user:
             respond = Account_Serializer(user).data
             respond['status'] = 'success'
             respond['session_id'] = Session_id
             return Response(respond)
         else:
-            return Response({"status": "failed","detail": "User Session does not exist: Authenticate first"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"status": "failed","detail": statusmsg}, status=status.HTTP_401_UNAUTHORIZED)
     
     @action(detail=False, methods=['post'])        
     def getsymmetrickey(self, request):
@@ -120,13 +120,10 @@ class Public_Accounts(ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def oauthcreateuser(self, request):
-        MGRealm.objects.update()
-        
         try:
             id__token = request.data['id_token']
             refresh__token = request.data['refresh_token']
             k = firebase_admin.auth.verify_id_token(id__token)
-            print(k)
             _optional_fields = {"first_name": k['name'],  
                                "oauth_credentials": {
                                    "refreshToken": refresh__token,
@@ -151,24 +148,35 @@ class Public_Accounts(ModelViewSet):
     def oauth_checklogin(self, request):
         try: 
             session_id = request.data['session_id']
-            user = self.sh.get_corresponding_user(session_id)
-            if user  == False:
-                return Response({"status": "failed", "detail": "Invalid session_id"})
-            else:
-                # k = firebase_admin.credentials.RefreshToken(user.oauth_credentials['refreshToken'])
-                k=exchange_token(user.oauth_credentials['refreshToken'])
+            message, session_user = self.sh.check_login(session_id)
+
+            print(message, session_user)
+            if (message == 'success'):
+                respond = {'status': 'success', 'session_id': session_id}
+                respond.update(Account_Serializer(session_user).data)
+                return Response(respond)
+            elif(message == 'user access revoked'):
+                return Response({"status": "failed", "detail": "User Access Revoked"}, status=status.HTTP_401_UNAUTHORIZED)
+            elif(message == 'session expired'):
+                k=exchange_token(session_user.oauth_credentials['refreshToken'])
+                if k==False:
+                    return Response({"status": "failed", "detail": "OAuth Expired: Access was denied by the provider. The user may have revoked access or consent. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)    
                 _user_profile = k['user_profile']
-                self.revise_oauth_user_profile(user,_user_profile)
-                return Response({"status": "success", "detail": k})
-        except KeyboardInterrupt as e:
-            print(e)
-            return Response({"status": "failed", "detail": f"Invalid Token {e}"}, status=status.HTTP_401_UNAUTHORIZED)
+                self.revise_oauth_user_profile(session_user,_user_profile)
+                # self.sh.update_session(session_id)
+                new_session = self.sh.create_session(session_user.id)
+                payload = {
+                    "message": "token refreshed",
+                    "session_id": new_session.session_key,
+                    "session_expiry": new_session.expire_date
+                    }
+                return Response({"status": "success", "detail": payload}, status=status.HTTP_200_OK)
+            else:
+                return Response({"status": "failed", "detail": "Invalid Token"}, status=status.HTTP_401_UNAUTHORIZED)
+        except KeyError as e:
+            return Response({"status": "failed", "detail": f"Missing Parameters: {e}"}, status=status.HTTP_401_UNAUTHORIZED)
             
 
-                
-            
-            
-    
     
     # Utility Functions
     def _create_user(self, email, password, appId, **optional_fields):

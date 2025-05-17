@@ -22,7 +22,7 @@ class SessionHandler:
     
     def set_expiry(self, date=None):
         """
-        Updates the expiration period of a session key
+        return the standard expiration period for a session key
         """
         if date==None:
             return timezone.localdate() + timedelta(days=14) 
@@ -44,18 +44,36 @@ class SessionHandler:
             expire_date = self.set_expiry(),
             user = userobj
         )
+    def update_session(self, session_id):
+        try:
+            session = self.sessmodel.objects.get(session_key = session_id)
+            session.expire_date = self.set_expiry()
+            session.save()
+        except ObjectDoesNotExist:
+            return False
 
     def check_login(self, Session_key):
         """
         Checks for the expiration of the provided Session_key
         """
         session = self.sessmodel.objects.filter(session_key=Session_key)
-        if session.exists():
+        msg = "success"
+
+        if not session.exists():
+            return "session does not exist", False
+        
+        if session[0].user.is_active:
             if timezone.localdate() < session[0].expire_date:
-                return session[0].user 
+                return msg, session[0].user 
             else:
+                msg = "session expired"
+                user = session[0].user
                 session[0].delete()
-        return False
+                return msg, user
+        else:
+            flag = False
+            msg = "user access revoked"
+            return msg, session[0].user   
     
     def get_corresponding_user(self, Session_key):
         """
