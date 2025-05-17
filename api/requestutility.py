@@ -24,8 +24,7 @@ def exchange_token(token):
     if response.status_code == 200:
         print("RECIEVED ID")
         processed = response.json()
-        user_profile = firebase_admin.auth.verify_id_token(processed['id_token'])
-        print(user_profile)
+        user_profile = firebase_admin.auth.verify_id_token(processed['id_token'], clock_skew_seconds=60)
         [processed.pop(k) for k in ['access_token', 'expires_in', 'token_type', 'user_id', 'project_id', 'refresh_token']]
         processed['user_profile'] = user_profile
         return processed
